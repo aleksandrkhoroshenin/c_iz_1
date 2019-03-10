@@ -20,59 +20,108 @@
 #define MAX_SIZE 4096
 #define MAX_CPY_SIZE 1024
 #define COUNT_OF_KEYS 4
+#define ERROR "[error]"
 
 const char* key_words[] = {"Date:", "From:", "To:", "Subject:"};
 
-typedef char**  string_array;
-
 // input string array
-size_t input_strings(string_array pString);
+size_t input_strings(char ** strings);
 
 // filter array
-void array_filter(string_array inp, size_t lines, string_array out, size_t *out_size);
+char * array_filter(char * inp[], size_t lines, char ** out, size_t *out_size);
 
-void array_filter(string_array inp, size_t lines, string_array out, size_t *out_size){
+void free_array(char ** result, size_t size);
+
+int main(){
+    char ** p_string = calloc(MAX_SIZE, sizeof(char* ));
+    if (p_string == NULL) {
+        printf(ERROR);
+        return 0;
+    }
+
+    size_t size = input_strings(p_string);
+
+    if (size == 0) {
+        free(p_string);
+        return 0;
+    }
+
+    char ** p = NULL;
+
+    char ** result = calloc(size, sizeof(char* ));
+    if (result == NULL) {
+        free_array(p_string, size);
+        printf(ERROR);
+        return 0;
+    }
+
+    // process
+    size_t out_size = 0;
+    char * error = array_filter(p_string, size, result, &out_size);
+
+    if (error != NULL) {
+        printf(ERROR);
+        return 0;
+    }
+
+    // Output
+    p = result;
+    while (*p) {
+        if (*p != NULL) {
+            printf("%s\n", *p);
+            p++;
+        }
+    }
+
+    free_array(p_string, size);
+    free_array(result, out_size);
+    return 0;
+}
+
+char* array_filter(char *inp[], size_t lines, char ** out, size_t *out_size){
 
     char* line = calloc(MAX_SIZE, sizeof(char));
     if (line == NULL) {
-        printf("[error]");
-        return;
+        return ERROR;
     }
 
     size_t j = 0;
     size_t key_size = 0;
-    size_t is_ok = 0; // 1 - match, 0 - no matches
+    _Bool is_ok = 0; // 1 - match, 0 - no matches
     size_t current_out_index = 0;
 
     for (size_t i = 0; i < lines; ++i){
-        strncpy(line, inp[i], strlen(inp[i]) * sizeof(char*));
-        is_ok = 1;
-        for (size_t t = 0; t < COUNT_OF_KEYS; ++t) {
-            if (line[0] == key_words[t][0]) {
-                j = 1;
+        if (inp[i] != NULL) {
+            strncpy(line, inp[i], strlen(inp[i]) * sizeof(char*));
+            is_ok = 1;
+            for (size_t t = 0; t < COUNT_OF_KEYS; ++t) {
+                if (line[0] == key_words[t][0]) {
+                    j = 1;
 
-                key_size = strlen(key_words[t]);
-                while (line[j] != '\0' && j < key_size) {
-                    if (line[j] != key_words[t][j]) {
-                        is_ok = 0;
-                        break; // it is not a key
+                    key_size = strlen(key_words[t]);
+                    while (line[j] != '\0' && j < key_size) {
+                        if (line[j] != key_words[t][j]) {
+                            is_ok = 0;
+                            break; // it is not a key
+                        }
+                        j++ ;
                     }
-                    j++ ;
-                }
-                if (is_ok == 1) {
-                    out[current_out_index] = (char* )malloc(MAX_CPY_SIZE*sizeof(char));
-                    strncpy(out[current_out_index], line, MAX_CPY_SIZE* sizeof(char));
-                    current_out_index += 1;
-                    break; // one key was found, no more in current char
+                    if (is_ok == 1) {
+                        out[current_out_index] = (char* )malloc(MAX_CPY_SIZE*sizeof(char));
+                        strncpy(out[current_out_index], line, MAX_CPY_SIZE* sizeof(char));
+                        current_out_index += 1;
+                        break; // one key was found, no more in current char
+                    }
                 }
             }
         }
     }
     *out_size = current_out_index;
     free(line);
+    return NULL;
 }
 
-void free_array(string_array result, size_t size) {
+void free_array(char ** result, size_t size) {
     if (!result)
         return;
     for (size_t i = 0; i < size; i++) {
@@ -108,42 +157,4 @@ size_t input_strings(char **strings) {
         n_lines++;
     }
     return n_lines;
-}
-
-int main(){
-    string_array pString = calloc(MAX_SIZE, sizeof(char* ));
-    if (pString == NULL) {
-        printf("[error]");
-        return 0;
-    }
-
-    size_t size = input_strings(pString);
-
-    if (size == 0) {
-        free(pString);
-        return 0;
-    }
-
-    string_array p;
-
-    string_array result = calloc(size, sizeof(char* ));
-    if (result == NULL) {
-        printf("[error]");
-        return 0;
-    }
-
-    // process
-    size_t out_size = 0;
-    array_filter(pString, size, result, &out_size);
-
-    // Output
-    p = result;
-    while (*p) {
-        printf("%s\n", *p);
-        p++;
-    }
-
-    free_array(pString, size);
-    free_array(result, out_size);
-    return 0;
 }
